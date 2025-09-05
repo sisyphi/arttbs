@@ -1,6 +1,7 @@
 require('Vector2')
 
 Entity = {
+    category = '',
     pos = Vec2:new(1, 1),
     move_dir = Vec2:new(0, 0),
     rot_dir = Vec2:new(0, -1),
@@ -8,6 +9,7 @@ Entity = {
     health = 1,
     actions = {},
     ai = {},
+    mode = nil,
 }
 Entity.__type = 'Entity'
 
