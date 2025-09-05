@@ -34,6 +34,7 @@ end
 function EntityManager:draw(width, height)
     for idx = #self.entities, 1, -1 do
         local curr_ent = self.entities[idx]
-        curr_ent:draw(width, height)
+        if curr_ent.category == 'player' then curr_ent:draw(width, height, '#4f8fba') end
+        if curr_ent.category == 'enemy' then curr_ent:draw(width, height, '#da863e') end
     end
 end
