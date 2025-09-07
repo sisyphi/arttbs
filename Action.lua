@@ -25,6 +25,11 @@ function Action:execute(origin, rot_dir, grid)
         type(origin) == 'table' and origin.__type == 'Vector2',
         'Expected origin to be Vector2, got ' .. type(origin)
     )
+
+    assert(
+        type(rot_dir) == 'table' and rot_dir.__type == 'Vector2',
+        'Expected rot_dir to be Vector2, got ' .. type(rot_dir)
+    )
     for idx = #self.effects, 1, -1 do
         local curr_eff = self.effects[idx]
         local grid_pos = origin:add(rotate(curr_eff.pos, rot_dir))

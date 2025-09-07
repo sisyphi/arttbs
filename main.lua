@@ -10,6 +10,7 @@ require('EntityAI')
 require('EntityManager')
 require('Action')
 require('Effect')
+require('Helper')
 
 local grid
 local scale
@@ -132,6 +133,10 @@ local function is_dir_input(input)
     return input == 'DIR_UP' or input == 'DIR_RIGHT' or input == 'DIR_DOWN' or input == 'DIR_LEFT'
 end
 
+local function is_rot_input(input)
+    return input == 'ROT_LEFT' or input == 'ROT_RIGHT'
+end
+
 local function translate_to_dir_vec(input)
     if input == 'DIR_UP' then return DIR.VEC[DIR.KEY.NORTH] end
     if input == 'DIR_RIGHT' then return DIR.VEC[DIR.KEY.EAST] end
@@ -151,29 +156,45 @@ local function translate_to_mode(input)
     return nil
 end
 
-local function handle_player()
-    for _, input in ipairs(input_buffer.queue) do
-        if is_mode_input(input) then
-            player.mode = input
-        elseif is_dir_input(input) then
-            local dir = translate_to_dir_vec(input)
-            if player.mode == 'MODE_1' then
-                player.move_dir = dir
-                if not grid:is_oobs(player.pos:add(player.move_dir)) and grid:get_cell(player.pos:add(player.move_dir)) == nil then
-                    player:move(player.move_dir)
-                    player.render_pos = player.pos:add(Vec2:new(-1, -1)):mult(Vec2:new(cell_size, cell_size))
-                end
-            elseif player.mode == 'MODE_2' then
-                player.rot_dir = dir
-                player.actions[1]:execute(player.pos, player.rot_dir, grid)
-            elseif player.mode == 'MODE_3' then
-                print('TODO::No implementation for MODE_3')
-            end
+local function handle_player_single_mode(input)
+    if is_dir_input(input) then
+        local dir = translate_to_dir_vec(input)
+        player.move_dir = dir
+        if not grid:is_oobs(player.pos:add(player.move_dir)) and grid:get_cell(player.pos:add(player.move_dir)) == nil then
+            player:move(player.move_dir)
+            player.render_pos = player.pos:add(Vec2:new(-1, -1)):mult(Vec2:new(cell_size, cell_size))
         end
-
-        entity_manager:update_entities(cell_size, cell_size)
-        grid:update_entities(entity_manager.entities)
+    elseif is_rot_input(input) then
+        player:rotate(translate_to_rot(input))
+    elseif is_mode_input(input) then
+        player.actions[1]:execute(player.pos, player.rot_dir, grid)
     end
+    entity_manager:update_entities(cell_size, cell_size)
+    grid:update_entities(entity_manager.entities)
+    grid:print_debug()
+end
+
+local function handle_player_buffer_mode(input)
+    if is_mode_input(input) then
+        player.mode = input
+    elseif is_dir_input(input) then
+        local dir = translate_to_dir_vec(input)
+        if player.mode == 'MODE_1' then
+            player.move_dir = dir
+            if not grid:is_oobs(player.pos:add(player.move_dir)) and grid:get_cell(player.pos:add(player.move_dir)) == nil then
+                player:move(player.move_dir)
+                player.render_pos = player.pos:add(Vec2:new(-1, -1)):mult(Vec2:new(cell_size, cell_size))
+            end
+        elseif player.mode == 'MODE_2' then
+            player.rot_dir = dir
+            player.actions[1]:execute(player.pos, player.rot_dir, grid)
+        elseif player.mode == 'MODE_3' then
+            print('TODO::No implementation for MODE_3')
+        end
+    end
+    entity_manager:update_entities(cell_size, cell_size)
+    grid:update_entities(entity_manager.entities)
+    grid:print_debug()
 end
 
 local function handle_entities()
@@ -282,10 +303,10 @@ function love.load()
 
     canvas = love.graphics.newCanvas(Config.GAME_WIDTH, Config.GAME_HEIGHT)
 
-    timer = Timer:new(5)
+    timer = Timer:new(1)
     timer:start()
 
-    input_buffer = InputBuffer:new({ size = 4 })
+    input_buffer = InputBuffer:new({ size = 1 })
 end
 
 function love.keypressed(key)
@@ -296,23 +317,47 @@ function love.keypressed(key)
     input_buffer:push(input)
 end
 
+local action_timer = 0
+local action_duration = 0.3
+local is_executing = false
+local current_action = nil
+local action_queue = {}
+local in_turn = false
+
 function love.update(dt)
     timer:update(dt)
-    if not timer.is_active then
-        timer:reset()
-        timer:start()
 
-        input_buffer:print_debug()
-        handle_player()
-        handle_entities()
+    if not in_turn and not timer.is_active then
+        action_queue = input_buffer:flush()
         input_buffer:clear()
+        timer:reset()
+        in_turn = true
+    end
+
+    if in_turn then
+        if is_executing then
+            action_timer = action_timer - dt
+            if action_timer <= 0 then
+                is_executing = false
+            end
+        else
+            current_action = table.remove(action_queue, 1)
+            if current_action then
+                handle_player_single_mode(current_action)
+                action_timer = action_duration
+                is_executing = true
+            else
+                handle_entities()
+                timer:start()
+                in_turn = false
+            end
+        end
     end
 end
 
 function love.draw()
     love.graphics.setCanvas(canvas)
-    love.graphics.clear(0, 0, 0, 1)
-
+    love.graphics.clear(Helper.hex_to_rgba('#e8c170'))
     grid:draw(Vec2:new(0, 0), cell_size, cell_size)
     entity_manager:draw(cell_size, cell_size)
 

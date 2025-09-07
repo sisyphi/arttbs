@@ -62,10 +62,10 @@ function Entity:add_health(val)
     self.health = self.health + val
 end
 
-function Entity:draw(width, height)
+function Entity:draw(width, height, color)
     love.graphics.push('all')
+    love.graphics.setColor(Helper.hex_to_rgba(color))
     love.graphics.translate(self.render_pos.x, self.render_pos.y)
-    love.graphics.setColor(0, 0, 0)
     love.graphics.rectangle('fill', 0, 0, width, height)
     love.graphics.pop()
 end

@@ -59,15 +59,8 @@ function Grid:draw(pos, width, height)
     love.graphics.translate(pos.x, pos.y)
     for row = 1, self.row_num do
         for col = 1, self.col_num do
-            love.graphics.push('all')
-            local cell = self.cells[row][col]
-            if cell ~= nil and cell.category == 'player' then
-                love.graphics.setColor(1, 1, 1)
-            elseif cell ~= nil and cell.category == 'enemy' then
-                love.graphics.setColor(0, 0, 1)
-            end
+            love.graphics.setColor(Helper.hex_to_rgba('#ebede9'))
             love.graphics.rectangle('fill', (col - 1) * width, (row - 1) * height, width, height)
-            love.graphics.pop()
         end
     end
     love.graphics.pop()

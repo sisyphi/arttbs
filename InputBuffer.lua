@@ -17,6 +17,16 @@ function InputBuffer:push(key)
     table.insert(self.queue, #self.queue + 1, key)
 end
 
+function InputBuffer:pop()
+    local input = self.queue[#self.queue]
+    table.remove(self.queue, #self.queue)
+    return input
+end
+
+function InputBuffer:flush()
+    return table.move(self.queue, 1, #self.queue, 1, {})
+end
+
 function InputBuffer:clear()
     for idx in pairs(self.queue) do
         self.queue[idx] = nil
